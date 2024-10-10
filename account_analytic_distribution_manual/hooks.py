@@ -1,7 +1,7 @@
 # Copyright 2024 Tecnativa - Carlos Lopez
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from odoo import SUPERUSER_ID, api, tools
+from odoo import tools
 
 # metadata for all models related to account_analytic_tag(m2m)
 # add more models if needed
@@ -105,9 +105,8 @@ RELATION_M2M_INFO = {
 }
 
 
-def post_init_hook(cr, registry):
-    if tools.table_exists(cr, "account_analytic_tag"):
-        env = api.Environment(cr, SUPERUSER_ID, {})
+def post_init_hook(env):
+    if tools.table_exists(env.cr, "account_analytic_tag"):
         DistributionManual = env["account.analytic.distribution.manual"]
         sql = """
         WITH counted_tags AS (

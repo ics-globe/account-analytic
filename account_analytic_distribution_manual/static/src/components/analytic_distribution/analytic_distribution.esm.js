@@ -1,12 +1,14 @@
 /** @odoo-module **/
 
 import {AnalyticDistribution} from "@analytic/components/analytic_distribution/analytic_distribution";
+import {AutoComplete} from "@web/core/autocomplete/autocomplete";
+import {_t} from "@web/core/l10n/translation";
 import {patch} from "@web/core/utils/patch";
 const {useState} = owl;
 
-patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
-    setup() {
-        this._super();
+patch(AnalyticDistribution.prototype, {
+    async setup() {
+        super.setup(...arguments);
         this.manual_distribution_by_id = {};
         this.state_manual_distribution = useState({
             id: this.props.record.data.manual_distribution_id
@@ -17,13 +19,13 @@ patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
         });
     },
     async willStart() {
-        await this._super();
+        await super.willStart(...arguments);
         if (this.state_manual_distribution.id) {
             this.refreshManualDistribution(this.state_manual_distribution.id);
         }
     },
     async willUpdate(nextProps) {
-        await this._super(nextProps);
+        await super.willUpdate(nextProps);
         const record_id = this.props.record.data.id || 0;
         const current_manual_distribution_id = this.state_manual_distribution.id;
         const new_manual_distribution_id = nextProps.record.data.manual_distribution_id
@@ -42,13 +44,15 @@ patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
         }
     },
     async save() {
-        await this._super();
-        await this.props.record.update({
-            manual_distribution_id: [
-                this.state_manual_distribution.id,
-                this.state_manual_distribution.label,
-            ],
-        });
+        await super.save();
+        if (this.state_manual_distribution.id) {
+            await this.props.record.update({
+                manual_distribution_id: [
+                    this.state_manual_distribution.id,
+                    this.state_manual_distribution.label,
+                ],
+            });
+        }
     },
     async refreshManualDistribution(manual_distribution_id) {
         if (manual_distribution_id === 0) {
@@ -77,7 +81,7 @@ patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
         }
     },
     get tags() {
-        let res = this._super();
+        let res = super.tags(...arguments);
         if (this.state_manual_distribution.id) {
             // Remove the delete button from tags
             // it will be added only to the manual distribution tag
@@ -107,7 +111,7 @@ patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
     sourcesAnalyticDistributionManual() {
         return [
             {
-                placeholder: this.env._t("Loading..."),
+                placeholder: _t("Loading..."),
                 options: (searchTerm) =>
                     this.loadOptionsSourceDistributionManual(searchTerm),
             },
@@ -130,7 +134,7 @@ patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
         }
         if (!options.length) {
             options.push({
-                label: this.env._t("No Analytic Distribution Manual found"),
+                label: _t("No Analytic Distribution Manual found"),
                 classList: "o_m2o_no_result",
                 unselectable: true,
             });
@@ -178,11 +182,14 @@ patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
         const analytic_accounts = await this.fetchAnalyticAccounts([
             ["id", "in", account_ids],
         ]);
+        const accountsArray = Array.isArray(analytic_accounts)
+            ? analytic_accounts
+            : Object.values(analytic_accounts);
         // Clear all distribution
         for (const group_id in this.list) {
             this.list[group_id].distribution = [];
         }
-        for (const account of analytic_accounts) {
+        for (const account of accountsArray) {
             // Add new tags
             const planId = account.root_plan_id[0];
             const tag = this.newTag(planId);
@@ -195,3 +202,5 @@ patch(AnalyticDistribution.prototype, "account_analytic_distribution_manual", {
         this.autoFill();
     },
 });
+
+AnalyticDistribution.components = {...AnalyticDistribution.components, AutoComplete};
